@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_height="match_parent"
+	android:layout_width="match_parent"
+	android:orientation="vertical">
+
+	<LinearLayout
+		android:layout_height="match_parent"
+		android:layout_width="match_parent"
+		android:orientation="vertical">
+
+		<EditText
+			android:layout_height="wrap_content"
+			android:layout_width="match_parent"
+			android:singleLine="true"
+			android:hint="请输入模型值 model"
+			android:id="@+id/model"/>
+
+		<EditText
+			android:layout_height="wrap_content"
+			android:layout_width="match_parent"
+			android:singleLine="true"
+			android:hint="请输入商标值 brand"
+			android:id="@+id/brand"/>
+
+		<EditText
+			android:layout_height="wrap_content"
+			android:layout_width="match_parent"
+			android:singleLine="true"
+			android:hint="请输入厂商值 manufacturer"
+			android:id="@+id/manufacturer"/>
+
+		<EditText
+			android:layout_height="wrap_content"
+			android:layout_width="match_parent"
+			android:hint="请输入产品值 product"
+			android:singleLine="true"
+			android:id="@+id/product"/>
+
+		<EditText
+			android:layout_height="wrap_content"
+			android:layout_width="match_parent"
+			android:id="@+id/device"
+			android:hint="请输入设备值 device"
+			android:singleLine="true"/>
+
+		<TextView
+			android:layout_height="wrap_content"
+			android:layout_width="wrap_content"
+			android:text="当前根据系统api读取到的机型信息："
+			android:id="@+id/apilabel"/>
+
+		<LinearLayout
+			android:layout_height="wrap_content"
+			android:layout_width="match_parent"
+			android:orientation="horizontal"
+			android:gravity="right">
+
+			<TextView
+				android:layout_height="wrap_content"
+				android:layout_width="wrap_content"
+				android:text="＃ＢＭ↹"/>
+
+		</LinearLayout>
+
+		<HorizontalScrollView
+			android:layout_height="wrap_content"
+			android:layout_width="wrap_content">
+
+			<LinearLayout
+				android:layout_height="wrap_content"
+				android:layout_width="wrap_content"
+				android:orientation="horizontal"
+				android:gravity="center">
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="修改"
+					android:id="@+id/change"
+					android:textStyle="bold"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="隐式修改"
+					android:textStyle="bold"
+					android:id="@+id/magisk"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="导出"
+					android:id="@+id/export"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="导入"
+					android:id="@+id/x_import"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="恢复"
+					android:id="@+id/reset"
+					android:textStyle="bold"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="帮助"
+					android:id="@+id/help"/>
+
+			</LinearLayout>
+
+		</HorizontalScrollView>
+
+	</LinearLayout>
+
+</LinearLayout>
+
