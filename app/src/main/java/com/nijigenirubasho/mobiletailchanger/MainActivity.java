@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -31,17 +32,17 @@ import java.util.Date;
 public class MainActivity extends Activity 
 {
 	TextView apiLabel;
-	String Sbrand;
-	String Smodel;
-	String Smanufacturer;
-	String Sproduct;
-	String Sdevice;
-	EditText Ebrand;
-	EditText Emodel;
-	EditText Emanufacturer;
-	EditText Eproduct;
-	EditText Edevice;
-	String FilePath;
+	String sBrand;
+	String sModel;
+	String sManufacturer;
+	String sProduct;
+	String sDevice;
+	EditText eBrand;
+	EditText eModel;
+	EditText eManufacturer;
+	EditText eProduct;
+	EditText eDevice;
+	String filePath;
 	SharedPreferences sp;
 	SharedPreferences.Editor spe;
 	Button change;
@@ -58,30 +59,31 @@ public class MainActivity extends Activity
 		sp = getSharedPreferences("config", MODE_WORLD_WRITEABLE);
 		spe = sp.edit();
 		apiLabel = (TextView) findViewById(R.id.apilabel);
-		Emodel = (EditText) findViewById(R.id.model);
-		Ebrand = (EditText) findViewById(R.id.brand);
-		Emanufacturer = (EditText) findViewById(R.id.manufacturer);
-		Edevice = (EditText) findViewById(R.id.device);
-		Eproduct = (EditText) findViewById(R.id.product);
+		eModel = (EditText) findViewById(R.id.model);
+		eBrand = (EditText) findViewById(R.id.brand);
+		eManufacturer = (EditText) findViewById(R.id.manufacturer);
+		eDevice = (EditText) findViewById(R.id.device);
+		eProduct = (EditText) findViewById(R.id.product);
 		change = (Button) findViewById(R.id.change);
 		x_import = (Button) findViewById(R.id.x_import);
 		export = (Button) findViewById(R.id.export);
 		reset = (Button) findViewById(R.id.reset);
 		help = (Button) findViewById(R.id.help);
 		magisk = (Button) findViewById(R.id.magisk);
-		Smodel = Build.MODEL;
-		Smanufacturer = Build.MANUFACTURER;
-		Sbrand = Build.BRAND;
-		Sproduct = Build.PRODUCT;
-		Sdevice = Build.DEVICE;
-		FilePath = getFilesDir().toString();
-		apiLabel.setText(apiLabel.getText().toString() + "\nmodel:" + Smodel + "\nbrand:" + Sbrand + "\nmanufacturer:" + Smanufacturer + "\nproduct:" + Sproduct + "\ndevice:" + Sdevice);
+		sModel = Build.MODEL;
+		sManufacturer = Build.MANUFACTURER;
+		sBrand = Build.BRAND;
+		sProduct = Build.PRODUCT;
+		sDevice = Build.DEVICE;
+		filePath = getFilesDir().toString();
+
+		apiLabel.setText(apiLabel.getText().toString() + "\nmodel:" + sModel + "\nbrand:" + sBrand + "\nmanufacturer:" + sManufacturer + "\nproduct:" + sProduct + "\ndevice:" + sDevice);
 		if (!new File("/data/magisk/resetprop").exists())
 		{
 			magisk.setEnabled(false);
 			toastText("无magisk", false);
 		}
-		if (!cmd(new String[]{"busybox echo test"}, false, false).equals("test"))
+		if (!cmd(new String[]{"busybox echo test"}, false, false)[0].equals("test"))
 		{
 			change.setEnabled(false);
 			reset.setEnabled(false);
@@ -128,11 +130,11 @@ public class MainActivity extends Activity
 									toastText("出现错误，编码格式有误", true);
 									return;
 								}
-								Emodel.setText(s[0]);
-								Ebrand.setText(s[1]);
-								Emanufacturer.setText(s[2]);
-								Eproduct.setText(s[3]);
-								Edevice.setText(s[4]);
+								eModel.setText(s[0]);
+								eBrand.setText(s[1]);
+								eManufacturer.setText(s[2]);
+								eProduct.setText(s[3]);
+								eDevice.setText(s[4]);
 							}
 						});
 					ab.create().show();
@@ -143,7 +145,7 @@ public class MainActivity extends Activity
 				@Override
 				public void onClick(View p1)
 				{
-					final String e=cryptoS(String.format("%s@%s@%s@%s@%s", Emodel.getText().toString(), Ebrand.getText().toString(), Emanufacturer.getText().toString(), Eproduct.getText().toString(), Edevice.getText().toString()), true);
+					final String e=cryptoS(String.format("%s@%s@%s@%s@%s", eModel.getText().toString(), eBrand.getText().toString(), eManufacturer.getText().toString(), eProduct.getText().toString(), eDevice.getText().toString()), true);
 					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
 					ab.setTitle("导出编辑框上的机型信息");
 					ab.setMessage(e);
@@ -165,7 +167,7 @@ public class MainActivity extends Activity
 				public void onClick(View p1)
 				{
 					String bfn=sp.getString("backup", null);
-					replaceBuildProp(FilePath + "/" + bfn);
+					replaceBuildProp(filePath + "/" + bfn);
 					toastText("恢复完成", false);
 					needReboot(false);
 				}
@@ -209,7 +211,7 @@ public class MainActivity extends Activity
 					needReboot(true);
 				}
 			});
-		if (!new File(FilePath + "/Hymen").exists())
+		if (!new File(filePath + "/Hymen").exists())
 		{
 			AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
 			ab.setTitle("欢迎");
@@ -220,14 +222,14 @@ public class MainActivity extends Activity
 					public void onCancel(DialogInterface p1)
 					{
 						requestRoot();
-						spe.putString("brand", Sbrand);
-						spe.putString("model", Smodel);
-						spe.putString("manufacturer", Smanufacturer);
-						spe.putString("product", Sproduct);
-						spe.putString("device", Sdevice);
+						spe.putString("brand", sBrand);
+						spe.putString("model", sModel);
+						spe.putString("manufacturer", sManufacturer);
+						spe.putString("product", sProduct);
+						spe.putString("device", sDevice);
 						spe.commit();
 						backup();
-						cmd(new String[]{"busybox mkdir " + FilePath + "/Hymen"}, false, true);
+						cmd(new String[]{"busybox mkdir " + filePath + "/Hymen"}, false, true);
 						Intent i = getPackageManager().getLaunchIntentForPackage(getPackageName());  
 						i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);  
 						startActivity(i);
@@ -238,11 +240,11 @@ public class MainActivity extends Activity
 		else
 		{
 			requestRoot();
-			Ebrand.setText(sp.getString("brand", null));
-			Emodel.setText(sp.getString("model", null));
-			Emanufacturer.setText(sp.getString("manufacturer", null));
-			Eproduct.setText(sp.getString("product", null));
-			Edevice.setText(sp.getString("device", null));
+			eBrand.setText(sp.getString("brand", null));
+			eModel.setText(sp.getString("model", null));
+			eManufacturer.setText(sp.getString("manufacturer", null));
+			eProduct.setText(sp.getString("product", null));
+			eDevice.setText(sp.getString("device", null));
 		}
 	}
 	@Override
@@ -268,10 +270,11 @@ public class MainActivity extends Activity
 		Date d= new Date(System.currentTimeMillis());
 		return spf.format(d);
 	}
-	String cmd(String[] command, boolean isRoot, boolean retError)
+	String[] cmd(String[] command, boolean isRoot, boolean retError)
 	{
 		StringBuilder sb = new StringBuilder();
 		StringBuilder sberr=new StringBuilder();
+		String[]ret=new String[2];
 		try
 		{
 			Process p ;
@@ -298,6 +301,7 @@ public class MainActivity extends Activity
 			{
 				sb.append(l);
 			}
+			ret[0] = sb.toString();
 			while ((lerr = brerr.readLine()) != null)
 			{
 				sberr.append(lerr + "\n");
@@ -309,6 +313,11 @@ public class MainActivity extends Activity
 			e.printStackTrace();
 			return null;
 		}
+		if (sberr.length() > 0)
+		{
+			sberr.deleteCharAt(sberr.length() - 1);
+			ret[1] = sberr.toString();
+		}
 		if (retError)
 		{
 			if (!sberr.toString().equals(""))
@@ -316,7 +325,7 @@ public class MainActivity extends Activity
 				toastText(getString(R.string.shell_error) + sberr.toString(), true);
 			}
 		}
-		return sb.toString();
+		return ret;
 	}
 	void copyFile(String oldPath, String newPath)
 	{ 
@@ -384,11 +393,11 @@ public class MainActivity extends Activity
 	{
 		if (switi)
 		{
-			return cmd(new String[]{"busybox echo \"" + s + "\" |base64"}, false, true);
+			return Base64.encodeToString(s.getBytes(), Base64.DEFAULT);
 		}
 		else
 		{
-			return cmd(new String[]{"busybox echo \"" + s + "\" |base64 -d"}, false, true);
+			return new String(Base64.decode(s.getBytes(), Base64.DEFAULT));
 		}
 	}
 	void needReboot(boolean isMagisk)
@@ -403,17 +412,24 @@ public class MainActivity extends Activity
 					@Override
 					public void onClick(DialogInterface p1, int p2)
 					{
-						cmd(new String[]{"busybox reboot -f"}, true, true);
+						cmd(new String[]{"busybox reboot -f","reboot"}, true, true);
 					}
 				});
-			ab.setPositiveButton("普通重启", new DialogInterface.OnClickListener(){
+			if (cmd(new String[]{"svc power"}, false, false)[1].contains("reboot"))
+			{
+				ab.setPositiveButton("普通重启", new DialogInterface.OnClickListener(){
 
-					@Override
-					public void onClick(DialogInterface p1, int p2)
-					{
-						cmd(new String[]{"svc power reboot"}, true, true);
-					}
-				});
+						@Override
+						public void onClick(DialogInterface p1, int p2)
+						{
+							cmd(new String[]{"svc power reboot"}, true, true);	
+						}
+					});
+			}
+			else
+			{
+				toastText("你的系统不支持普通重启！请使用其他重启方式！", false);
+			}			
 			ab.create().show();
 		}
 		else
@@ -434,7 +450,7 @@ public class MainActivity extends Activity
 	void backup()
 	{
 		String backupFileName="bpbackup_" + getTime();
-		cmd(new String[]{"busybox cp /system/build.prop " + FilePath + "/" + backupFileName}, false, true);
+		cmd(new String[]{"busybox cp /system/build.prop " + filePath + "/" + backupFileName}, false, true);
 		spe.putString("backup", backupFileName);
 		spe.commit();
 	}
@@ -480,11 +496,11 @@ public class MainActivity extends Activity
 	}  
 	void saveEdittext()
 	{
-		spe.putString("brand", Ebrand.getText().toString());
-		spe.putString("model", Emodel.getText().toString());
-		spe.putString("manufacturer", Emanufacturer.getText().toString());
-		spe.putString("product", Eproduct.getText().toString());
-		spe.putString("device", Edevice.getText().toString());
+		spe.putString("brand", eBrand.getText().toString());
+		spe.putString("model", eModel.getText().toString());
+		spe.putString("manufacturer", eManufacturer.getText().toString());
+		spe.putString("product", eProduct.getText().toString());
+		spe.putString("device", eDevice.getText().toString());
 		spe.commit();
 	}
 	void replaceBuildProp(String from)
@@ -514,28 +530,28 @@ public class MainActivity extends Activity
 	}
 	void changebp(String tempCopy, boolean isMagisk)
 	{
-		String tempMA=Emanufacturer.getText().toString();
-		String tempBR=Ebrand.getText().toString();
-		String tempMO=Emodel.getText().toString();
-		String tempPR=Eproduct.getText().toString();
-		String tempDE=Edevice.getText().toString();
-		if (!tempMA.equals("") && !tempMA.equals(Smanufacturer) && !tempMA.equals("#nc#"))
+		String tempMA=eManufacturer.getText().toString();
+		String tempBR=eBrand.getText().toString();
+		String tempMO=eModel.getText().toString();
+		String tempPR=eProduct.getText().toString();
+		String tempDE=eDevice.getText().toString();
+		if (!tempMA.equals("") && !tempMA.equals(sManufacturer) && !tempMA.equals("#nc#"))
 		{
 			propWrite("ro.product.manufacturer", tempMA, tempCopy, isMagisk);
 		}
-		if (!tempBR.equals("") && !tempBR.equals(Sbrand) && !tempBR.equals("#nc#"))
+		if (!tempBR.equals("") && !tempBR.equals(sBrand) && !tempBR.equals("#nc#"))
 		{
 			propWrite("ro.product.brand", tempBR , tempCopy, isMagisk);
 		}
-		if (!tempMO.equals("") && !tempMO.equals(Smodel) && !tempMO.equals("#nc#"))
+		if (!tempMO.equals("") && !tempMO.equals(sModel) && !tempMO.equals("#nc#"))
 		{
 			propWrite("ro.product.model", tempMO, tempCopy, isMagisk);
 		}
-		if (!tempPR.equals("") && !tempPR.equals(Sproduct) && !tempPR.equals("#nc#"))
+		if (!tempPR.equals("") && !tempPR.equals(sProduct) && !tempPR.equals("#nc#"))
 		{
 			propWrite("ro.product.name", tempPR, tempCopy, isMagisk);
 		}
-		if (!tempDE.equals("") && !tempDE.equals(Sdevice) && !tempDE.equals("#nc#"))
+		if (!tempDE.equals("") && !tempDE.equals(sDevice) && !tempDE.equals("#nc#"))
 		{
 			propWrite("ro.product.device", tempDE, tempCopy, isMagisk);
 		}

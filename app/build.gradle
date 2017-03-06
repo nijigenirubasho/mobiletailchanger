@@ -8,8 +8,8 @@ android {
         applicationId "com.nijigenirubasho.mobiletailchanger"
         minSdkVersion 14
         targetSdkVersion 21
-        versionCode 6
-        versionName "1.5_97days_v2"
+        versionCode 7
+        versionName "1.6_92days"
     }
     buildTypes {
         release {

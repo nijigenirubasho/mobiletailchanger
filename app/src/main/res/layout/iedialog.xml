@@ -9,7 +9,8 @@
 		android:layout_height="wrap_content"
 		android:layout_width="match_parent"
 		android:singleLine="true"
-		android:id="@+id/iedialogE"/>
+		android:id="@+id/iedialogE"
+		android:textColor="#FFFFFF"/>
 
 	<TextView
 		android:layout_height="wrap_content"
