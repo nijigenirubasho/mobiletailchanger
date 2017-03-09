@@ -229,7 +229,14 @@ public class MainActivity extends Activity
 						spe.putString("device", sDevice);
 						spe.commit();
 						backup();
-						cmd(new String[]{"busybox mkdir " + filePath + "/Hymen"}, false, true);
+						try
+						{
+							new File(filePath + "/Hymen").createNewFile();
+						}
+						catch (IOException e)
+						{
+							e.printStackTrace();
+						}
 						Intent i = getPackageManager().getLaunchIntentForPackage(getPackageName());  
 						i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);  
 						startActivity(i);
