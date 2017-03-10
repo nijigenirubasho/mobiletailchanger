@@ -76,7 +76,6 @@ public class MainActivity extends Activity
 		sProduct = Build.PRODUCT;
 		sDevice = Build.DEVICE;
 		filePath = getFilesDir().toString();
-
 		apiLabel.setText(apiLabel.getText().toString() + "\nmodel:" + sModel + "\nbrand:" + sBrand + "\nmanufacturer:" + sManufacturer + "\nproduct:" + sProduct + "\ndevice:" + sDevice);
 		if (!new File("/data/magisk/resetprop").exists())
 		{
