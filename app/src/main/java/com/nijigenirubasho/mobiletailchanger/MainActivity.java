@@ -475,7 +475,6 @@ public class MainActivity extends Activity
 		spe.putString("backup", backupFileName);
 		spe.commit();
 		cmd(new String[]{"mkdir " + sESDdir}, false, false);
-
 		copyFile("/system/build.prop", sESDdir + "/build_" + getTime() + ".prop");
 	}
 	void propWrite(String k, String v, String p, boolean isMagisk)
