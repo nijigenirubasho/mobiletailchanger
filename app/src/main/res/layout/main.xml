@@ -48,7 +48,7 @@
 		<TextView
 			android:layout_height="wrap_content"
 			android:layout_width="wrap_content"
-			android:text="当前根据系统api读取到的机型信息："
+			android:text="(长按此处显示更详细机型检测信息)\n当前根据系统api读取到的机型信息："
 			android:id="@+id/apilabel"/>
 
 		<LinearLayout
@@ -63,6 +63,13 @@
 				android:text="＃ＢＭ↹"/>
 
 		</LinearLayout>
+
+		<TextView
+			android:layout_height="wrap_content"
+			android:text="！"
+			android:layout_width="wrap_content"
+			android:textColor="#FF0F00"
+			android:textStyle="bold"/>
 
 		<HorizontalScrollView
 			android:layout_height="wrap_content"

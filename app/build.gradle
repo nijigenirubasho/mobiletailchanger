@@ -9,7 +9,7 @@ android {
         minSdkVersion 14
         targetSdkVersion 21
         versionCode 8
-        versionName "1.7_90days"
+        versionName "2.0_84days_finalver1"
     }
     buildTypes {
         release {

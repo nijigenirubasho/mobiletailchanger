@@ -9,10 +9,12 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -28,6 +30,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Properties;
 
 public class MainActivity extends Activity 
 {
@@ -210,6 +213,18 @@ public class MainActivity extends Activity
 					needReboot(true);
 				}
 			});
+		apiLabel.setOnLongClickListener(new OnLongClickListener(){
+
+				@Override
+				public boolean onLongClick(View p1)
+				{
+					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+					ab.setTitle("机型环境检测");
+					ab.setMessage(getAllModelInfo());
+					ab.create().show();
+					return false;
+				}
+			});
 		if (!new File(filePath + "/Hymen").exists())
 		{
 			AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
@@ -260,7 +275,6 @@ public class MainActivity extends Activity
 		toastText("编辑框的文本已保存", false);
 		super.onStop();
 	}
-
 	void toastText(String text, Boolean isLong)
 	{
 		int i=Toast.LENGTH_SHORT;
@@ -456,9 +470,13 @@ public class MainActivity extends Activity
 	void backup()
 	{
 		String backupFileName="bpbackup_" + getTime();
+		String sESDdir=Environment.getExternalStorageDirectory() + "/BuildPropBackup";
 		cmd(new String[]{"busybox cp /system/build.prop " + filePath + "/" + backupFileName}, false, true);
 		spe.putString("backup", backupFileName);
 		spe.commit();
+		cmd(new String[]{"mkdir " + sESDdir}, false, false);
+
+		copyFile("/system/build.prop", sESDdir + "/build_" + getTime() + ".prop");
 	}
 	void propWrite(String k, String v, String p, boolean isMagisk)
 	{
@@ -582,4 +600,40 @@ public class MainActivity extends Activity
 			e.printStackTrace();
 		} 
 	} 
+	String getAllModelInfo()
+	{
+		String enter="\n";
+		String tab="    ";
+		StringBuilder sb=new StringBuilder("(model,manufacturer,brand,product,device)");
+		sb.append(enter + "1.from android.os.Build");
+		sb.append(enter + tab + Build.MODEL);
+		sb.append(enter + tab + Build.MANUFACTURER);
+		sb.append(enter + tab + Build.BRAND);
+		sb.append(enter + tab + Build.PRODUCT);
+		sb.append(enter + tab + Build.DEVICE);
+		sb.append(enter + "2.from getprop");
+		sb.append(enter + tab + cmd(new String[]{"getprop ro.product.model"}, false, false)[0]);
+		sb.append(enter + tab + cmd(new String[]{"getprop ro.product.manufacturer"}, false, false)[0]);
+		sb.append(enter + tab + cmd(new String[]{"getprop ro.product.brand"}, false, false)[0]);
+		sb.append(enter + tab + cmd(new String[]{"getprop ro.product.name"}, false, false)[0]);
+		sb.append(enter + tab + cmd(new String[]{"getprop ro.product.device"}, false, false)[0]);
+		sb.append(enter + "3.from /system/build.prop");
+		Properties bp=new Properties();
+		try
+		{
+			bp.load(new FileInputStream(new File("/system/build.prop")));
+
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+		sb.append(enter + tab + (String) bp.get("ro.product.model"));
+		sb.append(enter + tab + (String) bp.get("ro.product.manufacturer"));
+		sb.append(enter + tab + (String) bp.get("ro.product.brand"));
+		sb.append(enter + tab + (String) bp.get("ro.product.name"));
+		sb.append(enter + tab + (String) bp.get("ro.product.device"));
+		sb.append(enter + "#END");
+		return sb.toString();
+	}
 }
