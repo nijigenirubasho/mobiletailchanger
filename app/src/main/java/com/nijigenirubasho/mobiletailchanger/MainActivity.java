@@ -1,39 +1,19 @@
 package com.nijigenirubasho.mobiletailchanger;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.ClipboardManager;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Environment;
-import android.util.Base64;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.View.OnLongClickListener;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
-import java.io.BufferedReader;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Properties;
+import android.app.*;
+import android.content.*;
+import android.content.pm.*;
+import android.net.*;
+import android.os.*;
+import android.util.*;
+import android.view.*;
+import android.view.View.*;
+import android.widget.*;
+import java.io.*;
+import java.text.*;
+import java.util.*;
+
+import java.lang.Process;
 
 public class MainActivity extends Activity 
 {
@@ -97,8 +77,8 @@ public class MainActivity extends Activity
 		}
 		if (!cmd(new String[]{"busybox echo test"}, false, false)[0].equals("test"))
 		{
-			change.setEnabled(false);
-			reset.setEnabled(false);
+			busybox.setChecked(false);
+			busybox.setEnabled(false);
 			toastText("无busybox", false);
 		}
 		change.setOnClickListener(new OnClickListener(){
@@ -289,8 +269,15 @@ public class MainActivity extends Activity
 				eManufacturer.setText(sp.getString("manufacturer", null));
 				eProduct.setText(sp.getString("product", null));
 				eDevice.setText(sp.getString("device", null));
-				busybox.setChecked(sp.getBoolean("busybox", false));
-				anzhuo.setChecked(sp.getBoolean("anzhuo", false));
+				try
+				{
+					busybox.setChecked(sp.getBoolean("busybox", false));
+					anzhuo.setChecked(sp.getBoolean("anzhuo", false));
+				}
+				catch (ClassCastException e)
+				{
+					toastText(e.toString(), false);
+				}
 			}
 		}
 		catch (PackageManager.NameNotFoundException e)
@@ -651,6 +638,10 @@ public class MainActivity extends Activity
 			change.setEnabled(false);
 			magisk.setEnabled(false);
 			reset.setEnabled(false);
+			anzhuo.setChecked(false);
+			anzhuo.setEnabled(false);
+			busybox.setChecked(false);
+			busybox.setEnabled(false);
 		}
 	}
 	void changebp(String tempCopy, boolean isMagisk)
