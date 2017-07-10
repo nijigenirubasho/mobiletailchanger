@@ -6,16 +6,19 @@ import android.content.ClipboardManager;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -54,6 +57,11 @@ public class MainActivity extends Activity
 	Button reset;
 	Button help;
 	Button magisk;
+	CheckBox busybox;
+	CheckBox anzhuo;
+	String bsbx_head="busybox ";
+	String fileinfo;
+	String tag="机型更改";
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -73,6 +81,8 @@ public class MainActivity extends Activity
 		reset = (Button) findViewById(R.id.reset);
 		help = (Button) findViewById(R.id.help);
 		magisk = (Button) findViewById(R.id.magisk);
+		busybox = (CheckBox) findViewById(R.id.bybx);
+		anzhuo = (CheckBox) findViewById(R.id.anzhuo);
 		sModel = Build.MODEL;
 		sManufacturer = Build.MANUFACTURER;
 		sBrand = Build.BRAND;
@@ -100,9 +110,15 @@ public class MainActivity extends Activity
 					copyFile("/system/build.prop", tempCopy);
 					changebp(tempCopy, false);
 					replaceBuildProp(tempCopy);
-					cmd(new String[]{"busybox rm " + tempCopy}, true, true);
+					cmd(new String[]{"rm " + tempCopy}, true, true);
 					toastText("已经完成修改", false);
 					saveEdittext();
+					if (anzhuo.isChecked())
+					{
+						fuckAnzhuoProp("/hw_oem/prop/local.prop", 0);
+						fuckAnzhuoProp("/system/customize/clientid/default.prop", 0);
+						fuckAnzhuoProp("/product/etc/prop/local.prop", 0);
+					}
 					needReboot(false);
 				}
 			});
@@ -168,6 +184,12 @@ public class MainActivity extends Activity
 				@Override
 				public void onClick(View p1)
 				{
+					if (anzhuo.isChecked())
+					{
+						fuckAnzhuoProp("/hw_oem/prop/local.prop", 1);
+						fuckAnzhuoProp("/system/customize/clientid/default.prop", 1);
+						fuckAnzhuoProp("/product/etc/prop/local.prop", 1);
+					}
 					String bfn=sp.getString("backup", null);
 					replaceBuildProp(filePath + "/" + bfn);
 					toastText("恢复完成", false);
@@ -225,48 +247,54 @@ public class MainActivity extends Activity
 					return false;
 				}
 			});
-		if (!new File(filePath + "/Hymen").exists())
+		try
 		{
-			AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
-			ab.setTitle("欢迎");
-			ab.setMessage(getString(R.string.welcome));
-			ab.setOnCancelListener(new DialogInterface.OnCancelListener(){
+			if (sp.getInt("version", 0) != getPackageManager().getPackageInfo(getPackageName(), 0).versionCode)
+			{
+				AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+				ab.setTitle("欢迎");
+				ab.setMessage(getString(R.string.welcome));
+				if (sp.getInt("version", 0) == 0)
+					ab.setOnCancelListener(new DialogInterface.OnCancelListener(){
 
-					@Override
-					public void onCancel(DialogInterface p1)
-					{
-						requestRoot();
-						spe.putString("brand", sBrand);
-						spe.putString("model", sModel);
-						spe.putString("manufacturer", sManufacturer);
-						spe.putString("product", sProduct);
-						spe.putString("device", sDevice);
-						spe.commit();
-						backup();
-						try
-						{
-							new File(filePath + "/Hymen").createNewFile();
-						}
-						catch (IOException e)
-						{
-							e.printStackTrace();
-						}
-						Intent i = getPackageManager().getLaunchIntentForPackage(getPackageName());  
-						i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);  
-						startActivity(i);
-					}
-				});
-			ab.create().show();
+							@Override
+							public void onCancel(DialogInterface p1)
+							{
+								requestRoot();
+								spe.putString("brand", sBrand);
+								spe.putString("model", sModel);
+								spe.putString("manufacturer", sManufacturer);
+								spe.putString("product", sProduct);
+								spe.putString("device", sDevice);
+								try
+								{
+									spe.putInt("version", getPackageManager().getPackageInfo(getPackageName(), 0).versionCode);
+								}
+								catch (PackageManager.NameNotFoundException e)
+								{}
+								spe.commit();
+								backup();
+								Intent i = getPackageManager().getLaunchIntentForPackage(getPackageName());  
+								i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);  
+								startActivity(i);
+							}
+						});
+				ab.create().show();
+			}
+			else
+			{
+				requestRoot();
+				eBrand.setText(sp.getString("brand", null));
+				eModel.setText(sp.getString("model", null));
+				eManufacturer.setText(sp.getString("manufacturer", null));
+				eProduct.setText(sp.getString("product", null));
+				eDevice.setText(sp.getString("device", null));
+				busybox.setChecked(sp.getBoolean("busybox", false));
+				anzhuo.setChecked(sp.getBoolean("anzhuo", false));
+			}
 		}
-		else
-		{
-			requestRoot();
-			eBrand.setText(sp.getString("brand", null));
-			eModel.setText(sp.getString("model", null));
-			eManufacturer.setText(sp.getString("manufacturer", null));
-			eProduct.setText(sp.getString("product", null));
-			eDevice.setText(sp.getString("device", null));
-		}
+		catch (PackageManager.NameNotFoundException e)
+		{}
 	}
 	@Override
 	protected void onStop()
@@ -277,11 +305,11 @@ public class MainActivity extends Activity
 	}
 	void toastText(String text, Boolean isLong)
 	{
-		int i=Toast.LENGTH_SHORT;
+		int i;
 		if (isLong)
-		{
 			i = Toast.LENGTH_LONG;
-		}
+		else
+			i = Toast.LENGTH_SHORT;
 		Toast.makeText(getApplicationContext(), text, i).show();
 	}
 	String getTime()
@@ -426,7 +454,7 @@ public class MainActivity extends Activity
 		if (!isMagisk)
 		{
 			ab.setTitle("是否需要重启？");
-			ab.setMessage(getString(R.string.reboot));
+			ab.setMessage(getString(R.string.reboot) + "\n\n***所修改的文件特征如下***\n\n" + fileinfo);
 			ab.setNegativeButton("强制重启", new DialogInterface.OnClickListener(){
 
 					@Override
@@ -469,9 +497,12 @@ public class MainActivity extends Activity
 	}
 	void backup()
 	{
+		fuckAnzhuoProp("/hw_oem/prop/local.prop", 2);
+		fuckAnzhuoProp("/system/customize/clientid/default.prop", 2);
+		fuckAnzhuoProp("/product/etc/prop/local.prop", 2);
 		String backupFileName="bpbackup_" + getTime();
 		String sESDdir=Environment.getExternalStorageDirectory() + "/BuildPropBackup";
-		cmd(new String[]{"busybox cp /system/build.prop " + filePath + "/" + backupFileName}, false, true);
+		cmd(new String[]{"cp /system/build.prop " + filePath + "/" + backupFileName}, false, true);
 		spe.putString("backup", backupFileName);
 		spe.commit();
 		cmd(new String[]{"mkdir " + sESDdir}, false, false);
@@ -524,22 +555,93 @@ public class MainActivity extends Activity
 		spe.putString("manufacturer", eManufacturer.getText().toString());
 		spe.putString("product", eProduct.getText().toString());
 		spe.putString("device", eDevice.getText().toString());
+		spe.putBoolean("busybox", busybox.isChecked());
+		spe.putBoolean("anzhuo", anzhuo.isChecked());
 		spe.commit();
 	}
 	void replaceBuildProp(String from)
 	{
 		String time=getTime();
 		String temp="/system/build_rm_" + time + ".prop";
-		String bsbx_head="busybox ";
+		String selinuxoff="setenforce 0";
+		String rwpercfg="chattr -i /system/build.prop";
 		String mountrw="mount -o remount,rw /system";
-		String bmountrw=bsbx_head + mountrw;
-		String rename=bsbx_head + "mv -f /system/build.prop " + temp;
-		String copy=bsbx_head + "cp -f " + from + " /system/build.prop";
-		String change_mode=bsbx_head + "chmod 0644 /system/build.prop";
-		String delete_temp=bsbx_head + "rm -f " + temp;
+		String rename="mv -f /system/build.prop " + temp;
+		String copy="cp -f " + from + " /system/build.prop";
+		String change_mode="chmod 0644 /system/build.prop";
+		String delete_temp="rm -f " + temp;
 		String mountro="mount -o remount,ro /system";
-		String bmountro=bsbx_head + mountro;
-		cmd(new String[]{mountrw,bmountrw,rename,copy,change_mode,delete_temp,bmountro,mountro}, true, true);
+		if (busybox.isChecked())
+		{
+			rwpercfg = bsbx_head + rwpercfg;
+			mountrw = bsbx_head + mountrw;
+			rename = bsbx_head + rename;
+			copy = bsbx_head + copy;
+			change_mode = bsbx_head + change_mode;
+			delete_temp = bsbx_head + delete_temp;
+			mountro = bsbx_head + mountro;
+		}
+		cmd(new String[]{selinuxoff,mountrw,rwpercfg,rename,copy,change_mode,delete_temp,mountro}, true, true);
+		fileinfo = cmd(new String[]{"ls -l /system/build.prop"}, false, true)[0];
+	}
+	void fuckAnzhuoProp(String src, int flag)
+	{
+		switch (flag)
+		{
+			case 0:
+				if (new File(src).exists())
+				{
+					String t=getTime();
+					String tmp=Environment.getExternalStorageDirectory() + "/AnzhuoBackup"
+						+ src.subSequence(src.lastIndexOf("/"), src.length()).toString() + t;
+					Log.d(tag, "src:" + src + " tmp:" + tmp);
+					cmd(new String[]{"mkdir "
+							+ Environment.getExternalStorageDirectory() + "/AnzhuoBackup",
+							"cp " + src + " " + tmp}, false, false);
+					changebp(tmp, false);
+					cmd(new String[]{
+							"mount -o rw,remount /",
+							"mount -o rw,remount /system",
+							"cp " + src + " " + src + "bak" + t,
+							"cp -f " + tmp + " " + src,
+							"chmod 0644 " + src,
+							"rm -f " + src + "bak" + t
+						}
+						, true, true);
+					fileinfo += "\n\n\"" + src + "\":\n" + cmd(new String[]{"ls -l " + src}, false, true)[0];
+				}
+				else
+					Log.e(tag, src + " not exist");
+				break;
+			case 1:
+				String b=sp.getString(src, null);
+				if (b != null)
+				{
+					cmd(new String[]{
+							"mount -o rw,remount /",
+							"cp -f " + b + " " + src,
+							"chmod 0644 " + src,
+						}
+						, true, true);
+					fileinfo += "\n\n\"" + src + "\":\n" + cmd(new String[]{"ls -l " + src}, false, true)[0];
+				}
+				else
+					Log.e(tag, src + "cfg read failed");
+				break;
+			case 2:
+				if (new File(src).exists())
+				{
+					String t=getTime();
+					String tmp=Environment.getExternalStorageDirectory() + "/AnzhuoBackup"
+						+ src.subSequence(src.lastIndexOf("/"), src.length()).toString() + t;
+					cmd(new String[]{"mkdir "
+							+ Environment.getExternalStorageDirectory() + "/AnzhuoBackup",
+							"cp " + src + " " + tmp}, false, false);
+					spe.putString(src, tmp);
+					spe.commit();
+				}
+				break;
+		}
 	}
 	void requestRoot()
 	{
