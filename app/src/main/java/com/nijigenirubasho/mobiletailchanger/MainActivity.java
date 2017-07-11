@@ -1,19 +1,39 @@
 package com.nijigenirubasho.mobiletailchanger;
 
-import android.app.*;
-import android.content.*;
-import android.content.pm.*;
-import android.net.*;
-import android.os.*;
-import android.util.*;
-import android.view.*;
-import android.view.View.*;
-import android.widget.*;
-import java.io.*;
-import java.text.*;
-import java.util.*;
-
-import java.lang.Process;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ClipboardManager;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.util.Base64;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Properties;
 
 public class MainActivity extends Activity 
 {
@@ -70,7 +90,7 @@ public class MainActivity extends Activity
 		sDevice = Build.DEVICE;
 		filePath = getFilesDir().toString();
 		apiLabel.setText(apiLabel.getText().toString() + "\nmodel:" + sModel + "\nbrand:" + sBrand + "\nmanufacturer:" + sManufacturer + "\nproduct:" + sProduct + "\ndevice:" + sDevice);
-		if (!new File("/data/magisk/resetprop").exists())
+		if (!new File("/data/magisk/").exists())
 		{
 			magisk.setEnabled(false);
 			toastText("无magisk", false);
@@ -234,6 +254,13 @@ public class MainActivity extends Activity
 				AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
 				ab.setTitle("欢迎");
 				ab.setMessage(getString(R.string.welcome));
+				try
+				{
+					spe.putInt("version", getPackageManager().getPackageInfo(getPackageName(), 0).versionCode);
+				}
+				catch (PackageManager.NameNotFoundException e)
+				{}
+				spe.commit();
 				if (sp.getInt("version", 0) == 0)
 					ab.setOnCancelListener(new DialogInterface.OnCancelListener(){
 
@@ -246,12 +273,6 @@ public class MainActivity extends Activity
 								spe.putString("manufacturer", sManufacturer);
 								spe.putString("product", sProduct);
 								spe.putString("device", sDevice);
-								try
-								{
-									spe.putInt("version", getPackageManager().getPackageInfo(getPackageName(), 0).versionCode);
-								}
-								catch (PackageManager.NameNotFoundException e)
-								{}
 								spe.commit();
 								backup();
 								Intent i = getPackageManager().getLaunchIntentForPackage(getPackageName());  
@@ -259,25 +280,29 @@ public class MainActivity extends Activity
 								startActivity(i);
 							}
 						});
+				else
+				{
+					eBrand.setText(sp.getString("brand", null));
+					eModel.setText(sp.getString("model", null));
+					eManufacturer.setText(sp.getString("manufacturer", null));
+					eProduct.setText(sp.getString("product", null));
+					eDevice.setText(sp.getString("device", null));
+					busybox.setChecked(sp.getBoolean("busybox", false));
+					anzhuo.setChecked(sp.getBoolean("anzhuo", false));
+					requestRoot();
+				}
 				ab.create().show();
 			}
 			else
 			{
-				requestRoot();
 				eBrand.setText(sp.getString("brand", null));
 				eModel.setText(sp.getString("model", null));
 				eManufacturer.setText(sp.getString("manufacturer", null));
 				eProduct.setText(sp.getString("product", null));
 				eDevice.setText(sp.getString("device", null));
-				try
-				{
-					busybox.setChecked(sp.getBoolean("busybox", false));
-					anzhuo.setChecked(sp.getBoolean("anzhuo", false));
-				}
-				catch (ClassCastException e)
-				{
-					toastText(e.toString(), false);
-				}
+				busybox.setChecked(sp.getBoolean("busybox", false));
+				anzhuo.setChecked(sp.getBoolean("anzhuo", false));
+				requestRoot();
 			}
 		}
 		catch (PackageManager.NameNotFoundException e)
@@ -287,7 +312,7 @@ public class MainActivity extends Activity
 	protected void onStop()
 	{
 		saveEdittext();
-		toastText("编辑框的文本已保存", false);
+		toastText("设置已保存", false);
 		super.onStop();
 	}
 	void toastText(String text, Boolean isLong)
@@ -532,7 +557,10 @@ public class MainActivity extends Activity
 		}
 		else
 		{
-			cmd(new String[]{"/data/magisk/resetprop " + k + " " + v}, true, true);
+			if (new File("/data/magisk/resetprop").exists())
+				cmd(new String[]{"/data/magisk/resetprop \"" + k + "\" \"" + v + "\""}, true, true);
+			else
+				cmd(new String[]{"/data/magisk/magisk resetprop \"" + k + "\" \"" + v + "\""}, true, true);
 		}
 	}  
 	void saveEdittext()
