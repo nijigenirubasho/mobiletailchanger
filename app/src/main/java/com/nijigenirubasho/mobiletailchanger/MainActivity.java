@@ -208,7 +208,15 @@ public class MainActivity extends Activity
 							public void onClick(DialogInterface p1, int p2)
 							{
 								PackageManager pm=getPackageManager();
-								startActivity(pm.getLaunchIntentForPackage("com.topjohnwu.magisk"));
+								try
+								{
+									startActivity(pm.getLaunchIntentForPackage("com.topjohnwu.magisk"));
+								}
+								catch (NullPointerException e)
+								{
+									e.printStackTrace();
+									toastText("你似乎没有安装(或者冻结了)magisk manager...", false);
+								}
 							}
 						});
 					ab.create().show();
