@@ -108,7 +108,14 @@
 				<Button
 					android:layout_height="wrap_content"
 					android:layout_width="wrap_content"
-					android:text="隐式修改"
+					android:text="隐式永久修改"
+					android:textStyle="bold"
+					android:id="@+id/mgzip"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="隐式临时修改"
 					android:textStyle="bold"
 					android:id="@+id/magisk"/>
 
@@ -140,6 +147,12 @@
 			</LinearLayout>
 
 		</HorizontalScrollView>
+
+		<TextView
+			android:layout_height="wrap_content"
+			android:layout_width="wrap_content"
+			android:text="操作有风险，请在做好一切准备的情况下执行！"
+			android:textColor="#FF0000"/>
 
 	</LinearLayout>
 

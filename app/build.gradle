@@ -8,8 +8,8 @@ android {
         applicationId "com.nijigenirubasho.mobiletailchanger"
         minSdkVersion 14
         targetSdkVersion 21
-        versionCode 13
-        versionName "2.4　あやとり_指縛り"
+        versionCode 14
+        versionName "2.5　会えない日曖昧に愛し合いたい"
     }
     buildTypes {
         release {

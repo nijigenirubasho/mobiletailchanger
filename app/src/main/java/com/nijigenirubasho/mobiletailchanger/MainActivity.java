@@ -34,6 +34,10 @@ import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+import org.apache.http.util.EncodingUtils;
 
 public class MainActivity extends Activity 
 {
@@ -57,6 +61,7 @@ public class MainActivity extends Activity
 	Button reset;
 	Button help;
 	Button magisk;
+	Button mgzip;
 	CheckBox busybox;
 	CheckBox anzhuo;
 	String bsbx_head="busybox ";
@@ -67,7 +72,7 @@ public class MainActivity extends Activity
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		sp = getSharedPreferences("config", MODE_WORLD_WRITEABLE);
+		sp = getSharedPreferences("config", MODE_PRIVATE);
 		spe = sp.edit();
 		apiLabel = (TextView) findViewById(R.id.apilabel);
 		eModel = (EditText) findViewById(R.id.model);
@@ -80,6 +85,7 @@ public class MainActivity extends Activity
 		export = (Button) findViewById(R.id.export);
 		reset = (Button) findViewById(R.id.reset);
 		help = (Button) findViewById(R.id.help);
+		mgzip = (Button) findViewById(R.id.mgzip);
 		magisk = (Button) findViewById(R.id.magisk);
 		busybox = (CheckBox) findViewById(R.id.bybx);
 		anzhuo = (CheckBox) findViewById(R.id.anzhuo);
@@ -166,14 +172,43 @@ public class MainActivity extends Activity
 					final String e=cryptoS(String.format("%s@%s@%s@%s@%s", eModel.getText().toString(), eBrand.getText().toString(), eManufacturer.getText().toString(), eProduct.getText().toString(), eDevice.getText().toString()), true);
 					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
 					ab.setTitle("导出编辑框上的机型信息");
-					ab.setMessage(e);
-					ab.setPositiveButton("复制编码", new DialogInterface.OnClickListener(){
+					if (e.equals("QEBAQA==\n"))
+						ab.setMessage("编辑框上内容全为空，无法备份！");
+					else
+					{
+						ab.setMessage(e);
+						ab.setPositiveButton("复制编码", new DialogInterface.OnClickListener(){
+
+								@Override
+								public void onClick(DialogInterface p1, int p2)
+								{
+									ClipboardManager cm=(ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+									cm.setText(e);
+								}
+							});
+					}
+					ab.create().show();
+				}
+			});
+		mgzip.setOnClickListener(new OnClickListener(){
+
+				@Override
+				public void onClick(View p1)
+				{
+					magiskZip();
+					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+					ab.setTitle("已生成magisk模块");
+					if (!new File("/data/magisk/").exists())
+					{
+						ab.setMessage("当前设备似乎没安装magisk，但仍可生成magisk模块");
+					}
+					ab.setNegativeButton("打开magisk manager", new DialogInterface.OnClickListener(){
 
 							@Override
 							public void onClick(DialogInterface p1, int p2)
 							{
-								ClipboardManager cm=(ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
-								cm.setText(e);
+								PackageManager pm=getPackageManager();
+								startActivity(pm.getLaunchIntentForPackage("com.topjohnwu.magisk"));
 							}
 						});
 					ab.create().show();
@@ -254,13 +289,6 @@ public class MainActivity extends Activity
 				AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
 				ab.setTitle("欢迎");
 				ab.setMessage(getString(R.string.welcome));
-				try
-				{
-					spe.putInt("version", getPackageManager().getPackageInfo(getPackageName(), 0).versionCode);
-				}
-				catch (PackageManager.NameNotFoundException e)
-				{}
-				spe.commit();
 				if (sp.getInt("version", 0) == 0)
 					ab.setOnCancelListener(new DialogInterface.OnCancelListener(){
 
@@ -291,6 +319,13 @@ public class MainActivity extends Activity
 					anzhuo.setChecked(sp.getBoolean("anzhuo", false));
 					requestRoot();
 				}
+				try
+				{
+					spe.putInt("version", getPackageManager().getPackageInfo(getPackageName(), 0).versionCode);
+				}
+				catch (PackageManager.NameNotFoundException e)
+				{}
+				spe.commit();
 				ab.create().show();
 			}
 			else
@@ -597,7 +632,7 @@ public class MainActivity extends Activity
 			mountro = bsbx_head + mountro;
 		}
 		cmd(new String[]{selinuxoff,mountrw,rwpercfg,rename,copy,change_mode,delete_temp,mountro}, true, true);
-		fileinfo = cmd(new String[]{"ls -l /system/build.prop"}, false, true)[0];
+		fileinfo = stringArrayToString(cmd(new String[]{"ls -l /system/build.prop"}, false, true), "\n");
 	}
 	void fuckAnzhuoProp(String src, int flag)
 	{
@@ -623,7 +658,7 @@ public class MainActivity extends Activity
 							"rm -f " + src + "bak" + t
 						}
 						, true, true);
-					fileinfo += "\n\n\"" + src + "\":\n" + cmd(new String[]{"ls -l " + src}, false, true)[0];
+					fileinfo += "\n\n\"" + src + "\":\n" + stringArrayToString(cmd(new String[]{"ls -l " + src}, false, true), "\n");
 				}
 				else
 					Log.e(tag, src + " not exist");
@@ -638,7 +673,7 @@ public class MainActivity extends Activity
 							"chmod 0644 " + src,
 						}
 						, true, true);
-					fileinfo += "\n\n\"" + src + "\":\n" + cmd(new String[]{"ls -l " + src}, false, true)[0];
+					fileinfo += "\n\n\"" + src + "\":\n" + stringArrayToString(cmd(new String[]{"ls -l " + src}, false, true), "\n");
 				}
 				else
 					Log.e(tag, src + "cfg read failed");
@@ -756,4 +791,164 @@ public class MainActivity extends Activity
 		sb.append(enter + "#END");
 		return sb.toString();
 	}
+	String fileTxtRead(String fileName)
+	{  
+		String res="";
+        try
+		{
+			File file = new File(fileName);  
+			FileInputStream fis = new FileInputStream(file);  
+			int length = fis.available(); 
+			byte [] buffer = new byte[length]; 
+			fis.read(buffer);     
+			res = EncodingUtils.getString(buffer, "UTF-8"); 
+			fis.close();     
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}  
+		return res;
+	}  
+	void magiskZip()
+	{
+		String t=getTime();
+		String tmpdir=Environment.getExternalStorageDirectory() + "/MTCmagiskTmp_" + t;
+		unzipAssetRes("mgzip_MTC.zip", tmpdir + "/unzipTmp", true);
+		String tmzdir=tmpdir + "/unzipTmp/";
+		propWrite("MODID", t, tmzdir + "config.sh", false);
+		propWrite("id", t, tmzdir + "module.prop", false);
+		propWrite("name", "机型修改_ID:" + t, tmzdir + "module.prop", false);
+		changebp(tmzdir + "common/system.prop", false);
+		String intro="这是由\"机型更改\"(com.nijigenirubasho.mobiletailchanger)自动生成的magisk模块(ID:" + t + ")";
+		propWrite("description", intro, tmzdir + "module.prop", false);
+		String cfgshbody=fileTxtRead(tmzdir + "config.sh");
+		cfgshbody = cfgshbody.replace("**********", intro);
+		writeFile(cfgshbody, tmzdir + "config.sh");
+		zip(tmzdir, Environment.getExternalStorageDirectory() + "/MTCmagiskMod_" + t + ".zip", false);
+		clearDir(new File(tmpdir));
+	}
+	String stringArrayToString(String[] in, String dot)
+	{
+		String out = "";
+		for (int i=0;i < in.length;i++)
+		{
+			if (i == in.length - 1)
+			{
+				out += in[i];
+			}
+			else
+			{
+				out += in[i] + dot;
+			}
+		}
+		return out;
+	}
+	void unzipAssetRes(String assetName, String outputDirectory, boolean isReWrite)
+	{
+		File f = new File(outputDirectory);
+		if (!f.exists())
+		{
+			f.mkdirs();
+		}
+		try
+		{
+			InputStream is = getApplicationContext().getAssets().open(assetName);
+			ZipInputStream zis = new ZipInputStream(is);
+			ZipEntry ze = zis.getNextEntry();
+			byte[] buffer = new byte[1024];
+			int i = 0;
+			while (ze != null)
+			{
+				if (ze.isDirectory())
+				{
+					f = new File(outputDirectory + File.separator + ze.getName());
+					if (isReWrite || !f.exists())
+					{
+						f.mkdir();
+					}
+				}
+				else
+				{
+					f = new File(outputDirectory + File.separator + ze.getName());
+					if (isReWrite || !f.exists())
+					{
+						f.createNewFile();
+						FileOutputStream fos = new FileOutputStream(f);
+						while ((i = zis.read(buffer)) > 0)
+						{
+							fos.write(buffer, 0, i);
+						}
+						fos.close();
+					}
+				}
+				ze = zis.getNextEntry();
+			}
+			zis.close();
+		}
+		catch (IOException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	void zip(String path, String zippath, boolean isContainPrimaryDir)
+	{
+		try
+		{
+			File f = new File(path);
+			File zipFile = new File(zippath);
+			ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(zipFile));
+			if (f.isDirectory())
+			{
+				File[] files = f.listFiles();
+				for (File fileSec:files)
+				{
+					if (isContainPrimaryDir)
+						zip2(zos, fileSec, f.getName() + File.separator);
+					else
+						zip2(zos, fileSec, "");
+				}
+			}
+			zos.close();
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
+    private void zip2(ZipOutputStream zos, File f, String baseDir) throws Exception
+	{
+        if (f.isDirectory())
+		{
+            File[] fs = f.listFiles();
+            for (File fileSec:fs)
+			{
+                zip2(zos, fileSec, baseDir + f.getName() + File.separator);
+            }
+        }
+		else
+		{
+            byte[] buf = new byte[1024];
+            InputStream is = new FileInputStream(f);
+            zos.putNextEntry(new ZipEntry(baseDir + f.getName()));
+            int len;
+            while ((len = is.read(buf)) != -1)
+			{
+                zos.write(buf, 0, len);
+            }
+            is.close();
+        }
+    }
+	void clearDir(File f1)
+	{  
+        if (f1.isDirectory())
+		{  
+            for (File f2 : f1.listFiles())
+			{  
+                clearDir(f2);  
+                f2.delete();  
+            }  
+        }  
+        f1.delete();  
+    }  
 }
