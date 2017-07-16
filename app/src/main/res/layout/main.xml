@@ -122,6 +122,13 @@
 				<Button
 					android:layout_height="wrap_content"
 					android:layout_width="wrap_content"
+					android:text="xposed黑名单"
+					android:textStyle="bold"
+					android:id="@+id/xposed_bl"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
 					android:text="导出"
 					android:id="@+id/export"/>
 

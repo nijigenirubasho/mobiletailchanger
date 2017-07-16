@@ -62,6 +62,7 @@ public class MainActivity extends Activity
 	Button help;
 	Button magisk;
 	Button mgzip;
+	Button xposed;
 	CheckBox busybox;
 	CheckBox anzhuo;
 	String bsbx_head="busybox ";
@@ -72,7 +73,7 @@ public class MainActivity extends Activity
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.main);
-		sp = getSharedPreferences("config", MODE_PRIVATE);
+		sp = getSharedPreferences("config", MODE_WORLD_READABLE);
 		spe = sp.edit();
 		apiLabel = (TextView) findViewById(R.id.apilabel);
 		eModel = (EditText) findViewById(R.id.model);
@@ -85,6 +86,7 @@ public class MainActivity extends Activity
 		export = (Button) findViewById(R.id.export);
 		reset = (Button) findViewById(R.id.reset);
 		help = (Button) findViewById(R.id.help);
+		xposed = (Button) findViewById(R.id.xposed_bl);
 		mgzip = (Button) findViewById(R.id.mgzip);
 		magisk = (Button) findViewById(R.id.magisk);
 		busybox = (CheckBox) findViewById(R.id.bybx);
@@ -107,25 +109,44 @@ public class MainActivity extends Activity
 			busybox.setEnabled(false);
 			toastText("无busybox", false);
 		}
+		xposed.setOnClickListener(new OnClickListener(){
+
+				@Override
+				public void onClick(View p1)
+				{
+					startActivity(new Intent(MainActivity.this, XposedCfgActivity.class));
+				}
+			});
 		change.setOnClickListener(new OnClickListener(){
 
 				@Override
 				public void onClick(View p1)
 				{
-					String tempCopy="/sdcard/bptemp_" + getTime();
-					copyFile("/system/build.prop", tempCopy);
-					changebp(tempCopy, false);
-					replaceBuildProp(tempCopy);
-					cmd(new String[]{"rm " + tempCopy}, true, true);
-					toastText("已经完成修改", false);
-					saveEdittext();
-					if (anzhuo.isChecked())
-					{
-						fuckAnzhuoProp("/hw_oem/prop/local.prop", 0);
-						fuckAnzhuoProp("/system/customize/clientid/default.prop", 0);
-						fuckAnzhuoProp("/product/etc/prop/local.prop", 0);
-					}
-					needReboot(false);
+					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+					ab.setTitle("二次确定");
+					ab.setMessage(getString(R.string.enter2));
+					ab.setNegativeButton("确定", new DialogInterface.OnClickListener(){
+
+							@Override
+							public void onClick(DialogInterface p1, int p2)
+							{
+								String tempCopy="/sdcard/bptemp_" + getTime();
+								copyFile("/system/build.prop", tempCopy);
+								changebp(tempCopy, false);
+								replaceBuildProp(tempCopy);
+								cmd(new String[]{"rm " + tempCopy}, true, true);
+								toastText("已经完成修改", false);
+								saveEdittext();
+								if (anzhuo.isChecked())
+								{
+									fuckAnzhuoProp("/hw_oem/prop/local.prop", 0);
+									fuckAnzhuoProp("/system/customize/clientid/default.prop", 0);
+									fuckAnzhuoProp("/product/etc/prop/local.prop", 0);
+								}
+								needReboot(false);
+							}
+						});
+					ab.create().show();
 				}
 			});
 		x_import.setOnClickListener(new OnClickListener(){
@@ -190,10 +211,10 @@ public class MainActivity extends Activity
 					ab.create().show();
 				}
 			});
-		mgzip.setOnClickListener(new OnClickListener(){
+		mgzip.setOnLongClickListener(new OnLongClickListener(){
 
 				@Override
-				public void onClick(View p1)
+				public boolean onLongClick(View p1)
 				{
 					magiskZip();
 					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
@@ -220,6 +241,28 @@ public class MainActivity extends Activity
 							}
 						});
 					ab.create().show();
+					return true;
+				}
+			});
+		mgzip.setOnClickListener(new OnClickListener(){
+
+				@Override
+				public void onClick(View p1)
+				{
+					if (new File("/magisk/MTC/").exists())
+					{
+						cmd(new String[]{"cp -f /magisk/MTC/system.prop /sdcard/CtrlTemp.a"}, true, true);
+						changebp("/sdcard/CtrlTemp.a", false);
+						cmd(new String[]{"cp -f /sdcard/CtrlTemp.a /magisk/MTC/system.prop"
+								,"chmod 0644 /magisk/MTC/system.prop"
+								,"rm -f /sdcard/CtrlTemp.a"}, true, true);
+						toastText("修改完成，重启生效", true);
+					}
+					else
+					{
+						magiskZipCtrl();
+						toastText("检测到你尚未安装magisk控制模块\nmagisk控制模块生成在" + Environment.getExternalStorageDirectory() + "/MTCmagiskMod_ControlBridge.zip", true);
+					}
 				}
 			});
 		reset.setOnClickListener(new OnClickListener(){
@@ -355,7 +398,7 @@ public class MainActivity extends Activity
 	protected void onStop()
 	{
 		saveEdittext();
-		toastText("设置已保存", false);
+		toastText("主界面设置已保存", false);
 		super.onStop();
 	}
 	void toastText(String text, Boolean isLong)
@@ -677,6 +720,7 @@ public class MainActivity extends Activity
 				{
 					cmd(new String[]{
 							"mount -o rw,remount /",
+							"mount -o rw,remount /system",
 							"cp -f " + b + " " + src,
 							"chmod 0644 " + src,
 						}
@@ -834,6 +878,23 @@ public class MainActivity extends Activity
 		cfgshbody = cfgshbody.replace("**********", intro);
 		writeFile(cfgshbody, tmzdir + "config.sh");
 		zip(tmzdir, Environment.getExternalStorageDirectory() + "/MTCmagiskMod_" + t + ".zip", false);
+		clearDir(new File(tmpdir));
+	}
+	void magiskZipCtrl()
+	{
+		String t=getTime();
+		String tmpdir=Environment.getExternalStorageDirectory() + "/MTCmagiskTmp_" + t;
+		unzipAssetRes("mgzip_MTC.zip", tmpdir + "/unzipTmp", true);
+		String tmzdir=tmpdir + "/unzipTmp/";
+		propWrite("MODID", "MTC", tmzdir + "config.sh", false);
+		propWrite("id", "MTC", tmzdir + "module.prop", false);
+		propWrite("name", "机型修改_magisk控制模块", tmzdir + "module.prop", false);
+		String intro="这是\"机型更改\"(com.nijigenirubasho.mobiletailchanger)的magisk控制模块";
+		propWrite("description", intro, tmzdir + "module.prop", false);
+		String cfgshbody=fileTxtRead(tmzdir + "config.sh");
+		cfgshbody = cfgshbody.replace("**********", intro);
+		writeFile(cfgshbody, tmzdir + "config.sh");
+		zip(tmzdir, Environment.getExternalStorageDirectory() + "/MTCmagiskMod_ControlBridge.zip", false);
 		clearDir(new File(tmpdir));
 	}
 	String stringArrayToString(String[] in, String dot)
