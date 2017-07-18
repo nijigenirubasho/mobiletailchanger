@@ -1,0 +1,1 @@
+用AIDE打包，然后用MT管理器的dex编辑器打开classes.dex，类列表中删去以android和de开头的类，保存重打包签名。
