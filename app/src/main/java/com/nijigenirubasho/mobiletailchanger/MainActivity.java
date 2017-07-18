@@ -665,15 +665,18 @@ public class MainActivity extends Activity
 		String time=getTime();
 		String temp="/system/build_rm_" + time + ".prop";
 		String selinuxoff="setenforce 0";
+		String mount2="mount -o rw,remount /dev/block/bootdevice/by-name/system /system";
 		String rwpercfg="chattr -i /system/build.prop";
 		String mountrw="mount -o remount,rw /system";
 		String rename="mv -f /system/build.prop " + temp;
 		String copy="cp -f " + from + " /system/build.prop";
 		String change_mode="chmod 0644 /system/build.prop";
 		String delete_temp="rm -f " + temp;
+		String sync="sync";
 		String mountro="mount -o remount,ro /system";
 		if (busybox.isChecked())
 		{
+			mount2 = bsbx_head + mount2;
 			rwpercfg = bsbx_head + rwpercfg;
 			mountrw = bsbx_head + mountrw;
 			rename = bsbx_head + rename;
@@ -681,8 +684,9 @@ public class MainActivity extends Activity
 			change_mode = bsbx_head + change_mode;
 			delete_temp = bsbx_head + delete_temp;
 			mountro = bsbx_head + mountro;
+			sync = bsbx_head + sync;
 		}
-		cmd(new String[]{selinuxoff,mountrw,rwpercfg,rename,copy,change_mode,delete_temp,mountro}, true, true);
+		cmd(new String[]{selinuxoff,mount2,mountrw,rwpercfg,rename,copy,change_mode,delete_temp,sync,mountro}, true, true);
 		fileinfo = stringArrayToString(cmd(new String[]{"ls -l /system/build.prop"}, false, true), "\n");
 	}
 	void fuckAnzhuoProp(String src, int flag)
@@ -701,12 +705,16 @@ public class MainActivity extends Activity
 							"cp " + src + " " + tmp}, false, false);
 					changebp(tmp, false);
 					cmd(new String[]{
+							"setenforce 0",
 							"mount -o rw,remount /",
 							"mount -o rw,remount /system",
+							"mount -o rw,remount /dev/block/bootdevice/by-name/system /system",
+							"chattr -i " + src,
 							"cp " + src + " " + src + "bak" + t,
 							"cp -f " + tmp + " " + src,
 							"chmod 0644 " + src,
-							"rm -f " + src + "bak" + t
+							"rm -f " + src + "bak" + t,
+							"sync"
 						}
 						, true, true);
 					fileinfo += "\n\n\"" + src + "\":\n" + stringArrayToString(cmd(new String[]{"ls -l " + src}, false, true), "\n");
@@ -719,10 +727,14 @@ public class MainActivity extends Activity
 				if (b != null)
 				{
 					cmd(new String[]{
+							"setenforce 0",
 							"mount -o rw,remount /",
 							"mount -o rw,remount /system",
+							"mount -o rw,remount /dev/block/bootdevice/by-name/system /system",
+							"chattr -i " + src,
 							"cp -f " + b + " " + src,
 							"chmod 0644 " + src,
+							"sync"
 						}
 						, true, true);
 					fileinfo += "\n\n\"" + src + "\":\n" + stringArrayToString(cmd(new String[]{"ls -l " + src}, false, true), "\n");
