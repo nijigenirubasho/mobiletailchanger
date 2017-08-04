@@ -2,6 +2,7 @@ package com.nijigenirubasho.mobiletailchanger;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
 import android.content.ClipboardManager;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -63,6 +64,7 @@ public class MainActivity extends Activity
 	Button magisk;
 	Button mgzip;
 	Button xposed;
+	Button compatibilityCheck;
 	CheckBox busybox;
 	CheckBox anzhuo;
 	String bsbx_head="busybox ";
@@ -91,6 +93,7 @@ public class MainActivity extends Activity
 		magisk = (Button) findViewById(R.id.magisk);
 		busybox = (CheckBox) findViewById(R.id.bybx);
 		anzhuo = (CheckBox) findViewById(R.id.anzhuo);
+		compatibilityCheck = (Button) findViewById(R.id.cch);
 		sModel = Build.MODEL;
 		sManufacturer = Build.MANUFACTURER;
 		sBrand = Build.BRAND;
@@ -270,16 +273,27 @@ public class MainActivity extends Activity
 				@Override
 				public void onClick(View p1)
 				{
-					if (anzhuo.isChecked())
-					{
-						fuckAnzhuoProp("/hw_oem/prop/local.prop", 1);
-						fuckAnzhuoProp("/system/customize/clientid/default.prop", 1);
-						fuckAnzhuoProp("/product/etc/prop/local.prop", 1);
-					}
-					String bfn=sp.getString("backup", null);
-					replaceBuildProp(filePath + "/" + bfn);
-					toastText("恢复完成", false);
-					needReboot(false);
+					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+					ab.setTitle("二次确定");
+					ab.setMessage(getString(R.string.enter3));
+					ab.setNegativeButton("确定", new DialogInterface.OnClickListener(){
+
+							@Override
+							public void onClick(DialogInterface p1, int p2)
+							{
+								if (anzhuo.isChecked())
+								{
+									fuckAnzhuoProp("/hw_oem/prop/local.prop", 1);
+									fuckAnzhuoProp("/system/customize/clientid/default.prop", 1);
+									fuckAnzhuoProp("/product/etc/prop/local.prop", 1);
+								}
+								String bfn=sp.getString("backup", null);
+								replaceBuildProp(filePath + "/" + bfn);
+								toastText("恢复完成", false);
+								needReboot(false);
+							}
+						});
+					ab.create().show();
 				}
 			});
 		help.setOnClickListener(new OnClickListener(){
@@ -290,7 +304,7 @@ public class MainActivity extends Activity
 					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
 					ab.setTitle("帮助");
 					ab.setMessage(getString(R.string.help));
-					ab.setPositiveButton("官方下载链接", new DialogInterface.OnClickListener(){
+					ab.setPositiveButton("官方链接", new DialogInterface.OnClickListener(){
 
 							@Override
 							public void onClick(DialogInterface p1, int p2)
@@ -299,12 +313,27 @@ public class MainActivity extends Activity
 								startActivity(i);
 							}
 						});
-					ab.setNegativeButton("busybox下载地址", new DialogInterface.OnClickListener(){
+					ab.setNegativeButton("busybox下载", new DialogInterface.OnClickListener(){
 
 							@Override
 							public void onClick(DialogInterface p1, int p2)
 							{
 								startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.coolapk.com/apk/ru.meefik.busybox")));
+							}
+						});
+					ab.setNeutralButton("捐赠", new DialogInterface.OnClickListener(){
+
+							@Override
+							public void onClick(DialogInterface p1, int p2)
+							{
+								try
+								{
+									startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://QR.ALIPAY.COM/FKX040845ILLL6VFEL7K06")));
+								}
+								catch (ActivityNotFoundException e)
+								{
+									Toast.makeText(getApplicationContext(), "你的系统没有安装浏览器或者不兼容此操作", Toast.LENGTH_SHORT).show();
+								}
 							}
 						});
 					ab.create().show();
@@ -331,6 +360,47 @@ public class MainActivity extends Activity
 					ab.setMessage(getAllModelInfo());
 					ab.create().show();
 					return false;
+				}
+			});
+		compatibilityCheck.setOnClickListener(new OnClickListener(){
+
+				@Override
+				public void onClick(View p1)
+				{
+					String wrBody="test data";
+					String fDir=getFilesDir().toString();
+					String fileName="test.data";
+					String report="###标准输出(以下应该显示为三段连续的test data和权限为rwxrwxrwx的文件信息):\n" + stringArrayToString(
+						cmd(new String[]{
+								"mount -o rw,remount /",
+								"mount -o rw,remount /system",
+								"mount -o rw,remount /dev/block/bootdevice/by-name/system /system",
+								"echo " + wrBody + " > /system/" + fileName,
+								"echo " + wrBody + " > /sdcard/" + fileName,
+								"echo " + wrBody + " > " + fDir + "/" + fileName,
+								"cat /system/" + fileName,
+								"cat /sdcard/" + fileName,
+								"cat " + fDir + "/" + fileName,
+								"chmod 777 /system/" + fileName,
+								"ls -l /system/" + fileName,
+								"rm /system/" + fileName,
+								"rm /sdcard/" + fileName,
+								"rm " + fDir + "/" + fileName
+							}, true, true)
+						, "\n###标准错误输出(以下应该显示null):\n") + "\n!!!请仔细检查报告是否符合要求，若不符合则表明使用本应用有风险";
+					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
+					ab.setTitle("兼容性检查报告");
+					ab.setMessage(report);
+					ab.setNegativeButton("关闭", new DialogInterface.OnClickListener(){
+
+							@Override
+							public void onClick(DialogInterface p1, int p2)
+							{
+								toastText("一次的结果可能不够准确，请测试三次以上以确认最终结果", false);
+								return;
+							}
+						});
+					ab.create().show();
 				}
 			});
 		try
