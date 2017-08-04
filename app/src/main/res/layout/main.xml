@@ -83,7 +83,7 @@
 
 			<TextView
 				android:layout_height="wrap_content"
-				android:text="＃ＢＭ↹"
+				android:text="＃ＢＭＸ↹"
 				android:layout_width="wrap_content"/>
 
 		</LinearLayout>
@@ -97,6 +97,13 @@
 				android:layout_width="match_parent"
 				android:orientation="horizontal"
 				android:gravity="center">
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="兼容性检查"
+					android:textStyle="bold"
+					android:id="@+id/cch"/>
 
 				<Button
 					android:layout_height="wrap_content"
