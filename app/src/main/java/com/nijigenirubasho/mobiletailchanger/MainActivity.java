@@ -112,6 +112,11 @@ public class MainActivity extends Activity
 			busybox.setEnabled(false);
 			toastText("无busybox", false);
 		}
+		if (!new File(getFilesDir() + "/" + sp.getString("backup", null)).exists())
+		{
+			toastText("备份文件已丢失！", true);
+			reset.setEnabled(false);
+		}
 		xposed.setOnClickListener(new OnClickListener(){
 
 				@Override
@@ -138,14 +143,14 @@ public class MainActivity extends Activity
 								changebp(tempCopy, false);
 								replaceBuildProp(tempCopy);
 								cmd(new String[]{"rm " + tempCopy}, true, true);
-								toastText("已经完成修改", false);
-								saveEdittext();
 								if (anzhuo.isChecked())
 								{
 									fuckAnzhuoProp("/hw_oem/prop/local.prop", 0);
 									fuckAnzhuoProp("/system/customize/clientid/default.prop", 0);
 									fuckAnzhuoProp("/product/etc/prop/local.prop", 0);
 								}
+								toastText("已经完成修改", false);
+								saveEdittext();
 								needReboot(false);
 							}
 						});
@@ -370,7 +375,7 @@ public class MainActivity extends Activity
 					String wrBody="test data";
 					String fDir=getFilesDir().toString();
 					String fileName="test.data";
-					String report="###标准输出(以下应该显示为三段连续的test data和权限为rwxrwxrwx的文件信息):\n" + stringArrayToString(
+					String report="1.shell读写\n###标准输出(以下应该显示为三段连续的test data和权限为rwxrwxrwx的文件信息):\n" + stringArrayToString(
 						cmd(new String[]{
 								"mount -o rw,remount /",
 								"mount -o rw,remount /system",
@@ -387,10 +392,13 @@ public class MainActivity extends Activity
 								"rm /sdcard/" + fileName,
 								"rm " + fDir + "/" + fileName
 							}, true, true)
-						, "\n###标准错误输出(以下应该显示null):\n") + "\n!!!请仔细检查报告是否符合要求，若不符合则表明使用本应用有风险";
+						, "\n###标准错误输出(以下应该显示null):\n");
+					String report2="\n2.build.prop备份验证\n###build.prop备份文件特征(请检查文件日期大小是否正常):\n" + 
+						stringArrayToString(cmd(new String[]{"ls -l " + getFilesDir() + "/" + sp.getString("backup", null)}, true, true), "\n###标准错误输出(以下应该显示null):\n") + 
+						"\n!!!请仔细检查报告是否符合要求，若不符合则表明使用本应用有风险";
 					AlertDialog.Builder ab=new AlertDialog.Builder(MainActivity.this, AlertDialog.THEME_DEVICE_DEFAULT_DARK);
 					ab.setTitle("兼容性检查报告");
-					ab.setMessage(report);
+					ab.setMessage(report + report2);
 					ab.setNegativeButton("关闭", new DialogInterface.OnClickListener(){
 
 							@Override
@@ -810,7 +818,7 @@ public class MainActivity extends Activity
 					fileinfo += "\n\n\"" + src + "\":\n" + stringArrayToString(cmd(new String[]{"ls -l " + src}, false, true), "\n");
 				}
 				else
-					Log.e(tag, src + "cfg read failed");
+					toastText(src + "文件的备份已删除，还原失败", false);
 				break;
 			case 2:
 				if (new File(src).exists())

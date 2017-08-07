@@ -108,13 +108,6 @@
 				<Button
 					android:layout_height="wrap_content"
 					android:layout_width="wrap_content"
-					android:text="修改"
-					android:id="@+id/change"
-					android:textStyle="bold"/>
-
-				<Button
-					android:layout_height="wrap_content"
-					android:layout_width="wrap_content"
 					android:text="隐式永久修改"
 					android:textStyle="bold"
 					android:id="@+id/mgzip"/>
@@ -144,6 +137,13 @@
 					android:layout_width="wrap_content"
 					android:text="导入"
 					android:id="@+id/x_import"/>
+
+				<Button
+					android:layout_height="wrap_content"
+					android:layout_width="wrap_content"
+					android:text="直接修改"
+					android:id="@+id/change"
+					android:textStyle="bold"/>
 
 				<Button
 					android:layout_height="wrap_content"
